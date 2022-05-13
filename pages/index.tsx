@@ -1,4 +1,5 @@
 import type { GetStaticProps } from 'next'
+import Link from 'next/link'
 import { supabase } from '../utils/supabase'
 
 type Lesson = {
@@ -14,21 +15,14 @@ interface Props {
 
 export default function Home({ lessons }: Props) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
-
-        {lessons.map((lesson) => (
-          <p key={lesson.id} className="mt-3 text-2xl">
+    <div className="mx-auto my-16 w-full max-w-3xl px-2">
+      {lessons.map((lesson) => (
+        <Link key={lesson.id} href={`/${lesson.id}`}>
+          <a className="mb-4 flex h-40 rounded p-8 text-xl shadow">
             {lesson.title}
-          </p>
-        ))}
-      </main>
+          </a>
+        </Link>
+      ))}
     </div>
   )
 }
