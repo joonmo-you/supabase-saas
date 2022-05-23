@@ -3,6 +3,7 @@ import { GetStaticProps } from 'next/types'
 import axios from 'axios'
 import { User } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { loadStripe } from '@stripe/stripe-js'
 import { useAuth } from '../contexts/auth-context'
 
 type Price = {
@@ -25,6 +26,7 @@ interface Props {
   plans: Array<Plan>
 }
 
+const publickKey = process.env.NEXT_PUBLIC_STRIPE_KEY as string
 const secretKey = process.env.STRIPE_SECRET_KEY as string
 
 function Reducer(state: State, { auth }: Action): State {
@@ -36,12 +38,18 @@ function Reducer(state: State, { auth }: Action): State {
 
 export default function Subscription({ plans }: Props) {
   const [state, dispatch] = React.useReducer(Reducer, { message: undefined })
+  const [selectedPriceId, setSelectedPriceId] = React.useState('')
   const { auth, isLoading } = useAuth()
 
-  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+  async function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
     switch (state.message) {
       case 'Subscribe':
-        axios.get(`/api/subscription/${auth?.id}`)
+        axios
+          .get(`/api/subscription/${selectedPriceId}`)
+          .then(async ({ data }) => {
+            const stripe = await loadStripe(publickKey)
+            await stripe?.redirectToCheckout({ sessionId: data.id })
+          })
         return
       case 'Manage Subscription':
         return
@@ -58,10 +66,18 @@ export default function Subscription({ plans }: Props) {
         <div key={product} className="h-40 w-80 rounded px-6 shadow">
           <h2 className="text-xl">{product}</h2>
           {prices.map(({ id, price, interval }) => (
-            <p key={id} className="text-gray-500">
-              ${(price / 100).toFixed(2)}{' '}
-              {interval !== undefined ? `/ ${interval}` : null}
-            </p>
+            <div key={id} className="flex items-center">
+              <input
+                type="checkbox"
+                className="mr-1 h-4 w-4 rounded-full"
+                checked={selectedPriceId === id}
+                onChange={() => setSelectedPriceId(id)}
+              />
+              <p className="text-gray-500">
+                ${(price / 100).toFixed(2)}{' '}
+                {interval !== undefined ? `/ ${interval}` : null}
+              </p>
+            </div>
           ))}
           {!isLoading ? (
             <button type="button" onClick={handleClick}>
