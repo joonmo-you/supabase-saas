@@ -1,6 +1,7 @@
-import { User } from '@supabase/supabase-js'
 import React from 'react'
 import { GetStaticProps } from 'next/types'
+import axios from 'axios'
+import { User } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { useAuth } from '../contexts/auth-context'
 
@@ -37,6 +38,16 @@ export default function Subscription({ plans }: Props) {
   const [state, dispatch] = React.useReducer(Reducer, { message: undefined })
   const { auth, isLoading } = useAuth()
 
+  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+    switch (state.message) {
+      case 'Subscribe':
+        axios.get(`/api/subscription/${auth?.id}`)
+        return
+      case 'Manage Subscription':
+        return
+    }
+  }
+
   React.useEffect(() => {
     dispatch({ auth })
   }, [auth])
@@ -52,7 +63,11 @@ export default function Subscription({ plans }: Props) {
               {interval !== undefined ? `/ ${interval}` : null}
             </p>
           ))}
-          {!isLoading ? <button>{state.message}</button> : null}
+          {!isLoading ? (
+            <button type="button" onClick={handleClick}>
+              {state.message}
+            </button>
+          ) : null}
         </div>
       ))}
     </div>

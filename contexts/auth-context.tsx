@@ -1,5 +1,6 @@
 import React from 'react'
 import Router from 'next/router'
+import axios from 'axios'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../utils/supabase'
 
@@ -49,6 +50,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setAuth(null)
         }
+        await axios.post('/api/auth', { event, session })
         setLoading(false)
       }
     )
