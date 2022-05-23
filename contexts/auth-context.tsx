@@ -1,19 +1,15 @@
 import React from 'react'
-import { User } from '@supabase/supabase-js'
-import { supabase } from '../utils/supabase'
 import Router from 'next/router'
+import type { User } from '@supabase/supabase-js'
+import { supabase } from '../utils/supabase'
 
 type SignIn = () => Promise<void>
 type SignOut = () => Promise<void>
-interface AuthState extends User {
-  interval?: string | null
-  is_subscribed?: boolean
-  stripe_customer?: string
-}
 
 const AuthContext = React.createContext<
   | {
-      auth: AuthState | null
+      auth: User | null
+      isLoading: boolean
       signIn: SignIn
       signOut: SignOut
     }
@@ -21,7 +17,8 @@ const AuthContext = React.createContext<
 >(undefined)
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [auth, setAuth] = React.useState<AuthState | null>(supabase.auth.user())
+  const [auth, setAuth] = React.useState<User | null>(supabase.auth.user())
+  const [isLoading, setLoading] = React.useState(false)
   const signIn = async () => {
     await supabase.auth.signIn({ provider: 'github' })
   }
@@ -37,23 +34,29 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        setLoading(true)
         if (event === 'SIGNED_IN' && session) {
           const { data: profile } = await supabase
             .from('profile')
             .select('*')
             .eq('id', session.user?.id)
             .single()
-          setAuth({ ...session.user, ...profile })
+          if (session.user)
+            setAuth({
+              ...session.user,
+              user_metadata: { ...session.user.user_metadata, ...profile },
+            })
         } else {
           setAuth(null)
         }
+        setLoading(false)
       }
     )
     return () => subscription?.unsubscribe()
   }, [])
 
   return (
-    <AuthContext.Provider value={{ auth, signIn, signOut }}>
+    <AuthContext.Provider value={{ auth, isLoading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

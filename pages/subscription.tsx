@@ -1,5 +1,8 @@
+import { User } from '@supabase/supabase-js'
+import React from 'react'
 import { GetStaticProps } from 'next/types'
 import Stripe from 'stripe'
+import { useAuth } from '../contexts/auth-context'
 
 type Price = {
   id: string
@@ -13,13 +16,31 @@ type Plan = {
   prices: Array<Price>
 }
 
+type State = { message: string | undefined }
+
+type Action = { auth: User | null }
+
 interface Props {
   plans: Array<Plan>
 }
 
 const secretKey = process.env.STRIPE_SECRET_KEY as string
 
+function Reducer(state: State, { auth }: Action): State {
+  if (auth === null) return { message: 'Create Account' }
+  return auth.user_metadata?.is_subscribed
+    ? { message: 'Manage Subscription' }
+    : { message: 'Subscribe' }
+}
+
 export default function Subscription({ plans }: Props) {
+  const [state, dispatch] = React.useReducer(Reducer, { message: undefined })
+  const { auth, isLoading } = useAuth()
+
+  React.useEffect(() => {
+    dispatch({ auth })
+  }, [auth])
+
   return (
     <div className="mx-auto flex w-full max-w-3xl justify-around py-16">
       {plans.map(({ product, prices }) => (
@@ -31,6 +52,7 @@ export default function Subscription({ plans }: Props) {
               {interval !== undefined ? `/ ${interval}` : null}
             </p>
           ))}
+          {!isLoading ? <button>{state.message}</button> : null}
         </div>
       ))}
     </div>
