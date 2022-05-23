@@ -1,15 +1,10 @@
 import React from 'react'
-import { useRouter } from 'next/router'
-import { supabase } from '../utils/supabase'
+import { useAuth } from '../contexts/auth-context'
 
 function SignOut() {
-  const router = useRouter()
+  const { signOut } = useAuth()
 
   React.useEffect(() => {
-    const signOut = async () => {
-      await supabase.auth.signOut()
-      router.push('/')
-    }
     signOut()
   }, [])
 
